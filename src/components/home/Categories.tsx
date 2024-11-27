@@ -1,10 +1,11 @@
+// src/components/home/Categories.tsx
 import React from 'react';
 import { useCategories } from '../../hooks/useCategories';
 import { useProducts } from '../../hooks/useProducts';
 import { Category } from '../../types';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Tag, Package } from 'lucide-react';
+import { Tag, Package, RefreshCw, AlertCircle } from 'lucide-react';
 
 const isDiscountActive = (category: Category): boolean => {
   if (!category.discount_enabled) return false;
@@ -15,12 +16,39 @@ const isDiscountActive = (category: Category): boolean => {
 };
 
 export function Categories() {
-  const { categories, loading, error } = useCategories();
+  const { categories, loading, error, retryLoading } = useCategories();
   const { products } = useProducts();
 
   const getProductCount = (categoryId: string): number => {
     return products.filter(product => product.category_id === categoryId).length;
   };
+
+  if (error) {
+    return (
+      <section className="py-16 bg-gradient-to-b from-white to-amber-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center p-4 bg-red-50 rounded-full mb-4">
+              <AlertCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Не удалось загрузить категории
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {error}
+            </p>
+            <button
+              onClick={retryLoading}
+              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              <RefreshCw className="w-5 h-5 mr-2" />
+              Попробовать снова
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (loading) {
     return (
@@ -34,6 +62,7 @@ export function Categories() {
               <div key={index} className="animate-pulse">
                 <div className="aspect-video bg-gray-200 rounded-2xl mb-3"></div>
                 <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
               </div>
             ))}
           </div>
@@ -42,12 +71,19 @@ export function Categories() {
     );
   }
 
-  if (error) {
+  const mainCategories = categories.filter(c => !c.parent_id);
+
+  if (mainCategories.length === 0) {
     return (
       <section className="py-16 bg-gradient-to-b from-white to-amber-50">
         <div className="container mx-auto px-4">
-          <div className="text-center text-red-600">
-            Ошибка при загрузке категорий
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Категории пока не добавлены
+            </h2>
+            <p className="text-gray-600">
+              Загляните позже, мы работаем над наполнением каталога.
+            </p>
           </div>
         </div>
       </section>
@@ -71,7 +107,7 @@ export function Categories() {
         </motion.div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
-          {categories.filter(c => !c.parent_id).map((category, index) => (
+          {mainCategories.map((category, index) => (
             <motion.div
               key={category.id}
               initial={{ opacity: 0, y: 20 }}
@@ -86,6 +122,7 @@ export function Categories() {
                       src={category.processed_image || category.image}
                       alt={category.name}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      loading={index > 5 ? 'lazy' : 'eager'}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     
