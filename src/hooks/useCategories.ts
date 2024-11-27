@@ -1,3 +1,4 @@
+// src/hooks/useCategories.ts
 import { useState, useEffect } from 'react';
 import { Category, CategoryInput } from '../lib/types';
 import { categoryService } from '../lib/services/categoryService';
@@ -7,45 +8,71 @@ export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    let mounted = true;
+    let retryTimeout: NodeJS.Timeout;
 
-  const fetchCategories = async () => {
-    try {
-      setLoading(true);
-      const data = await categoryService.getAll();
-      // Сортируем категории по позиции и имени
-      const sortedData = data.sort((a, b) => {
-        const posA = a.position || 0;
-        const posB = b.position || 0;
-        if (posA === posB) {
-          return a.name.localeCompare(b.name);
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await categoryService.getAll();
+        
+        if (mounted) {
+          // Сортируем категории по позиции и имени
+          const sortedData = data.sort((a, b) => {
+            const posA = a.position || 0;
+            const posB = b.position || 0;
+            if (posA === posB) {
+              return a.name.localeCompare(b.name);
+            }
+            return posA - posB;
+          });
+          setCategories(sortedData);
+          setRetryCount(0); // Сбрасываем счетчик при успешной загрузке
         }
-        return posA - posB;
-      });
-      setError(null);
-      setCategories(sortedData);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Ошибка при загрузке категорий';
-      setError(message);
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  };
+      } catch (err) {
+        if (mounted) {
+          const message = err instanceof Error ? err.message : 'Ошибка при загрузке категорий';
+          setError(message);
+          
+          // Пробуем повторить загрузку, если не превышен лимит попыток
+          if (retryCount < MAX_RETRIES) {
+            retryTimeout = setTimeout(() => {
+              setRetryCount(prev => prev + 1);
+              fetchCategories();
+            }, Math.min(1000 * Math.pow(2, retryCount), 10000)); // Экспоненциальная задержка
+          } else {
+            toast.error('Не удалось загрузить категории. Пожалуйста, обновите страницу.');
+          }
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchCategories();
+
+    return () => {
+      mounted = false;
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
+    };
+  }, [retryCount]);
 
   const addCategory = async (category: CategoryInput) => {
     try {
-      console.log('Adding category in hook:', category);
       const newCategory = await categoryService.create(category);
-      console.log('New category created:', newCategory);
       setCategories(prev => [...prev, newCategory].sort((a, b) => (a.position || 0) - (b.position || 0)));
       toast.success('Категория успешно добавлена');
       return newCategory;
     } catch (err) {
-      console.error('Error in addCategory hook:', err);
       const message = err instanceof Error ? err.message : 'Ошибка при добавлении категории';
       toast.error(message);
       throw err;
@@ -68,7 +95,6 @@ export function useCategories() {
   const updateCategoryPositions = async (updates: { id: string; position: number }[]) => {
     try {
       await categoryService.updatePositions(updates);
-      // Обновляем локальное состояние
       setCategories(prev => {
         const newCategories = [...prev];
         updates.forEach(update => {
@@ -98,6 +124,10 @@ export function useCategories() {
     }
   };
 
+  const retryLoading = () => {
+    setRetryCount(0); // Сбрасываем счетчик и начинаем загрузку заново
+  };
+
   return {
     categories,
     loading,
@@ -106,6 +136,7 @@ export function useCategories() {
     updateCategory,
     updateCategoryPositions,
     deleteCategory,
-    refreshCategories: fetchCategories
+    retryLoading,
+    refreshCategories: () => setRetryCount(0)
   };
 }
