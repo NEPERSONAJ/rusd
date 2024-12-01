@@ -1,0 +1,32 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /admin/*
+Disallow: /private/
+Disallow: /*?*
+Disallow: /*/print$
+Disallow: /*/print/
+Disallow: /search/
+Disallow: /404
+Disallow: /500
+
+# Allow media files
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.gif$
+Allow: /*.png$
+Allow: /*.webp$
+Allow: /*.svg$
+
+# Allow main assets
+Allow: /*.css$
+Allow: /*.js$
+
+# Crawl delays and rate limiting
+Crawl-delay: 10
+
+# Sitemaps
+Sitemap: https://rusdecor.info/sitemap.xml
+Sitemap: https://rusdecor.info/sitemap-categories.xml
+Sitemap: https://rusdecor.info/sitemap-products.xml
+Sitemap: https://rusdecor.info/sitemap-blog.xml
