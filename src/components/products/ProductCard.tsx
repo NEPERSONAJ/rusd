@@ -56,7 +56,6 @@ export function ProductCard({
   const { openChatWithProduct } = useAIChat();
   const location = useLocation();
 
-  // Combine main image with additional images, preferring processed versions
   const allImages = [
     processed_image || image,
     ...(processed_additional_images.length ? processed_additional_images : additional_images)
@@ -166,9 +165,10 @@ export function ProductCard({
           className="relative overflow-hidden aspect-[4/3] cursor-pointer"
           onClick={() => setShowModal(true)}
         >
-          <ImageGallery
-            images={allImages}
+          <img
+            src={allImages[0]}
             alt={name}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           
@@ -225,61 +225,52 @@ export function ProductCard({
 
         {/* Product Info */}
         <div className="flex-1 p-6 flex flex-col">
-          <h3 className="text-xl font-bold text-gray-900 mb-3 text-center line-clamp-2 min-h-[3.5rem]">
+          <h3 className="text-xl font-bold text-gray-900 mb-4 text-center line-clamp-2 min-h-[3.5rem]">
             {name}
           </h3>
-          
-          <p className="text-gray-600 text-center mb-4 line-clamp-3">
-            {description}
-          </p>
 
-          {/* Price Section */}
           <div className="mt-auto">
-            <div className="text-center mb-4">
-              {hasActiveDiscount ? (
-                <>
-                  <div className="text-gray-500 line-through text-lg">
+            <div className="flex items-center justify-between mb-6">
+              <div className="text-center">
+                {hasActiveDiscount ? (
+                  <>
+                    <div className="text-gray-500 line-through text-sm">
+                      {(price * quantity).toLocaleString('ru-RU')} ₽
+                    </div>
+                    <div className="text-xl font-bold text-red-600">
+                      {(finalPrice * quantity).toLocaleString('ru-RU')} ₽
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-xl font-bold text-gray-900">
                     {(price * quantity).toLocaleString('ru-RU')} ₽
                   </div>
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-2xl font-bold text-red-600">
-                      {(finalPrice * quantity).toLocaleString('ru-RU')} ₽
-                    </span>
-                    <span className="bg-red-100 text-red-600 text-sm px-2 py-0.5 rounded-full font-medium">
-                      -{discountPercent}%
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <span className="text-2xl font-bold text-gray-900">
-                  {(price * quantity).toLocaleString('ru-RU')} ₽
-                </span>
-              )}
-            </div>
+                )}
+              </div>
 
-            {/* Quantity Controls */}
-            <div className="flex items-center justify-center gap-4 mb-6 bg-gray-50 p-3 rounded-xl">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleQuantityChange(-1)}
-                className="p-2 rounded-full bg-white shadow-sm hover:shadow-md transition-shadow"
-                aria-label="Уменьшить количество"
-              >
-                <Minus className="w-4 h-4" />
-              </motion.button>
-              <span className="text-lg font-semibold min-w-[2ch] text-center">
-                {quantity}
-              </span>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleQuantityChange(1)}
-                className="p-2 rounded-full bg-white shadow-sm hover:shadow-md transition-shadow"
-                aria-label="Увеличить количество"
-              >
-                <Plus className="w-4 h-4" />
-              </motion.button>
+              <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleQuantityChange(-1)}
+                  className="p-2 rounded-full bg-white shadow-sm hover:shadow-md transition-shadow"
+                  aria-label="Уменьшить количество"
+                >
+                  <Minus className="w-4 h-4" />
+                </motion.button>
+                <span className="text-lg font-semibold min-w-[2ch] text-center">
+                  {quantity}
+                </span>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleQuantityChange(1)}
+                  className="p-2 rounded-full bg-white shadow-sm hover:shadow-md transition-shadow"
+                  aria-label="Увеличить количество"
+                >
+                  <Plus className="w-4 h-4" />
+                </motion.button>
+              </div>
             </div>
 
             {/* Action Buttons */}
@@ -336,7 +327,7 @@ export function ProductCard({
 
               <div className="p-6">
                 {/* Image Gallery */}
-                <div className="mb-6">
+                <div className="mb-6 max-w-2xl mx-auto">
                   <ImageGallery
                     images={allImages}
                     alt={name}
@@ -345,16 +336,16 @@ export function ProductCard({
                 </div>
 
                 {/* Product Details */}
-                <div className="space-y-6">
-                  <div>
+                <div className="max-w-2xl mx-auto space-y-6">
+                  <div className="text-center">
                     <h4 className="text-lg font-semibold text-gray-900 mb-2">Описание</h4>
                     <p className="text-gray-600 leading-relaxed">{description}</p>
                   </div>
 
                   {specs && specs.length > 0 && (
-                    <div className="bg-gray-50 rounded-xl p-6">
+                    <div className="bg-gray-50 rounded-xl p-6 text-center">
                       <h4 className="text-lg font-semibold text-gray-900 mb-4">Характеристики</h4>
-                      <div className="grid gap-4">
+                      <div className="inline-grid gap-4">
                         {specs.map((spec, index) => (
                           <div key={index} className="flex items-center text-gray-600">
                             <Package className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
@@ -368,7 +359,7 @@ export function ProductCard({
                   {/* Price and Actions */}
                   <div className="bg-gray-50 rounded-xl p-6">
                     <div className="flex items-center justify-between mb-6">
-                      <div>
+                      <div className="text-center">
                         <h4 className="text-lg font-semibold text-gray-900 mb-1">Стоимость</h4>
                         {hasActiveDiscount ? (
                           <div>
