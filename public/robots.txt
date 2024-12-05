@@ -2,6 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /admin/login
 Disallow: /api/
-Disallow: /private/
 
+# Sitemaps
 Sitemap: https://rusdecor.info/sitemap.xml
