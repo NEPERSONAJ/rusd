@@ -77,9 +77,8 @@ export const sitemapService = {
       { loc: `${baseUrl}/sale`, changefreq: 'daily', priority: 0.8 },
       { loc: `${baseUrl}/blog`, changefreq: 'daily', priority: 0.7 },
       { loc: `${baseUrl}/about`, changefreq: 'monthly', priority: 0.5 },
-      { loc: `${baseUrl}/contact`, changefreq: 'monthly', priority: 0.5 }
+      { loc: `${baseUrl}/contact`, changefreq: 'monthly', priority: 0.5 },
       { loc: `${baseUrl}/calculators`, changefreq: 'monthly', priority: 0.5 }
-    
     ];
 
     // Generate individual sitemaps
@@ -152,4 +151,3 @@ export const sitemapService = {
       .replace(/'/g, '&apos;');
   }
 };
-
