@@ -28,6 +28,10 @@ export const sitemapService = {
     <loc>${baseUrl}/sitemap-blog.xml</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
   </sitemap>
+  <sitemap>
+    <loc>${baseUrl}/sitemap-static.xml</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+  </sitemap>
 </sitemapindex>`;
 
     // Generate categories sitemap
@@ -76,56 +80,27 @@ export const sitemapService = {
       { loc: `${baseUrl}/catalog`, changefreq: 'daily', priority: 0.9 },
       { loc: `${baseUrl}/sale`, changefreq: 'daily', priority: 0.8 },
       { loc: `${baseUrl}/blog`, changefreq: 'daily', priority: 0.7 },
-      { loc: `${baseUrl}/about`, changefreq: 'monthly', priority: 0.5 },
-      { loc: `${baseUrl}/contact`, changefreq: 'monthly', priority: 0.5 },
-      { loc: `${baseUrl}/calculators`, changefreq: 'monthly', priority: 0.5 }
+      { loc: `${baseUrl}/about`, changefreq: 'monthly', priority: 0.6 },
+      { loc: `${baseUrl}/contact`, changefreq: 'monthly', priority: 0.6 },
+      { loc: `${baseUrl}/calculators`, changefreq: 'monthly', priority: 0.6 }
     ];
 
     // Generate individual sitemaps
     const categoriesSitemap = this.generateSitemapXML([...staticUrls, ...categoryUrls]);
     const productsSitemap = this.generateSitemapXML(productUrls);
     const blogSitemap = this.generateSitemapXML(blogUrls);
+    const staticSitemap = this.generateSitemapXML(staticUrls);
 
-    // Save sitemaps to Supabase storage
-    const { error: mainError } = await supabase
-      .storage
-      .from('public')
-      .upload('sitemap.xml', sitemapIndex, {
-        contentType: 'application/xml',
-        cacheControl: '3600',
-        upsert: true
-      });
+    // Save sitemaps to public directory
+    const fs = require('fs');
+    const path = require('path');
+    const publicDir = path.join(process.cwd(), 'public');
 
-    const { error: categoriesError } = await supabase
-      .storage
-      .from('public')
-      .upload('sitemap-categories.xml', categoriesSitemap, {
-        contentType: 'application/xml',
-        cacheControl: '3600',
-        upsert: true
-      });
-
-    const { error: productsError } = await supabase
-      .storage
-      .from('public')
-      .upload('sitemap-products.xml', productsSitemap, {
-        contentType: 'application/xml',
-        cacheControl: '3600',
-        upsert: true
-      });
-
-    const { error: blogError } = await supabase
-      .storage
-      .from('public')
-      .upload('sitemap-blog.xml', blogSitemap, {
-        contentType: 'application/xml',
-        cacheControl: '3600',
-        upsert: true
-      });
-
-    if (mainError || categoriesError || productsError || blogError) {
-      throw new Error('Failed to save sitemaps');
-    }
+    fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), sitemapIndex);
+    fs.writeFileSync(path.join(publicDir, 'sitemap-categories.xml'), categoriesSitemap);
+    fs.writeFileSync(path.join(publicDir, 'sitemap-products.xml'), productsSitemap);
+    fs.writeFileSync(path.join(publicDir, 'sitemap-blog.xml'), blogSitemap);
+    fs.writeFileSync(path.join(publicDir, 'sitemap-static.xml'), staticSitemap);
   },
 
   generateSitemapXML(urls: SitemapURL[]): string {
