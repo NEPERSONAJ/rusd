@@ -126,6 +126,14 @@ export function Categories() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     
+                    {/* Product Count Badge */}
+                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg flex items-center space-x-1.5">
+                      <Package className="w-4 h-4 text-amber-600" />
+                      <span className="text-sm font-semibold text-gray-800">
+                        {getProductCount(category.id)}
+                      </span>
+                    </div>
+                    
                     {category.discount_enabled && isDiscountActive(category) && (
                       <div className="absolute top-3 left-3">
                         <div className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center space-x-1">
@@ -147,15 +155,9 @@ export function Categories() {
                 </div>
 
                 <div className="mt-3 text-center">
-                  <div className="flex items-center justify-center space-x-2">
-                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-amber-600 transition-colors">
-                      {category.name}
-                    </h3>
-                    <div className="bg-amber-100 px-2 py-0.5 rounded-full text-xs font-medium text-amber-700 flex items-center space-x-1">
-                      <Package className="w-3 h-3" />
-                      <span>{getProductCount(category.id)}</span>
-                    </div>
-                  </div>
+                  <h3 className="text-sm font-semibold text-gray-900 group-hover:text-amber-600 transition-colors">
+                    {category.name}
+                  </h3>
                 </div>
               </Link>
             </motion.div>
