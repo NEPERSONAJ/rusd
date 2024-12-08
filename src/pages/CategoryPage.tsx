@@ -11,7 +11,7 @@ const CategoryPage = () => {
   const { categoryId = '' } = useParams();
   const navigate = useNavigate();
   const { categories, loading } = useCategories();
-  const { products, error: productsError } = useProducts(categoryId);
+  const { products, error: productsError } = useProducts();
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
   const category = categories.find(c => c.slug === categoryId);
 
@@ -21,8 +21,22 @@ const CategoryPage = () => {
     }
   }, [productsError]);
 
+  // Get all descendant category IDs for a given category
+  const getDescendantCategoryIds = (categoryId: string): string[] => {
+    const descendants: string[] = [categoryId];
+    const children = categories.filter(c => c.parent_id === categoryId);
+    
+    children.forEach(child => {
+      descendants.push(...getDescendantCategoryIds(child.id));
+    });
+    
+    return descendants;
+  };
+
+  // Get total product count for a category including all its subcategories
   const getSubcategoryProductCount = (categoryId: string): number => {
-    return products.filter(product => product.category_id === categoryId).length;
+    const categoryIds = getDescendantCategoryIds(categoryId);
+    return products.filter(product => categoryIds.includes(product.category_id)).length;
   };
 
   // Get parent categories path for breadcrumbs
@@ -39,7 +53,6 @@ const CategoryPage = () => {
   };
 
   const breadcrumbs = getBreadcrumbs();
-
   const subcategories = categories.filter(c => c.parent_id === category?.id);
 
   if (loading) {
