@@ -19,8 +19,22 @@ export function Categories() {
   const { categories, loading, error, retryLoading } = useCategories();
   const { products } = useProducts();
 
+  // Get all descendant category IDs for a given category
+  const getDescendantCategoryIds = (categoryId: string): string[] => {
+    const descendants: string[] = [categoryId];
+    const children = categories.filter(c => c.parent_id === categoryId);
+    
+    children.forEach(child => {
+      descendants.push(...getDescendantCategoryIds(child.id));
+    });
+    
+    return descendants;
+  };
+
+  // Get total product count for a category including all its subcategories
   const getProductCount = (categoryId: string): number => {
-    return products.filter(product => product.category_id === categoryId).length;
+    const categoryIds = getDescendantCategoryIds(categoryId);
+    return products.filter(product => categoryIds.includes(product.category_id)).length;
   };
 
   if (error) {
