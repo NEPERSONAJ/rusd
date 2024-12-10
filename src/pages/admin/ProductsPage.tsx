@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Layout } from '../../components/admin/Layout';
-import { Plus, Pencil, Trash2, Search, Tag, Clock, ChevronRight, ChevronDown, FolderTree } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Tag, Clock, ChevronRight, ChevronDown, FolderTree, ChevronLeft } from 'lucide-react';
 import { ProductForm } from '../../components/admin/ProductForm';
 import { useCategories } from '../../hooks/useCategories';
 import { useProducts } from '../../hooks/useProducts';
@@ -14,6 +14,8 @@ interface CategoryNode {
   level: number;
   parent_id: string | null;
 }
+
+const ITEMS_PER_PAGE = 10;
 
 const isDiscountActive = (product: Product): boolean => {
   if (!product.discount_enabled) return false;
@@ -50,19 +52,7 @@ export function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const { categories } = useCategories();
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(true);
-
-  const buildCategoryPath = (categoryId: string): string[] => {
-    const path: string[] = [];
-    let currentCategory = categories.find(c => c.id === categoryId);
-    
-    while (currentCategory) {
-      path.unshift(currentCategory.name);
-      currentCategory = categories.find(c => c.id === currentCategory.parent_id);
-    }
-    
-    return path;
-  };
-
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Only show error if we have one and we're not loading
   const shouldShowError = error && !loading;
@@ -90,6 +80,27 @@ export function ProductsPage() {
       }
       return next;
     });
+  };
+
+  // Filter products based on search and category
+  const filteredProducts = products.filter(product => {
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = !searchTerm || 
+      product.name.toLowerCase().includes(searchLower) ||
+      product.description.toLowerCase().includes(searchLower);
+    const matchesCategory = !selectedCategory || product.category_id === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Render category tree node
@@ -134,17 +145,6 @@ export function ProductsPage() {
     );
   };
 
-  // Filter products based on search term and selected category
-  // Filter products based on search and category
-  const filteredProducts = products.filter(product => {
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = !searchTerm || 
-      product.name.toLowerCase().includes(searchLower) ||
-      product.description.toLowerCase().includes(searchLower);
-    const matchesCategory = !selectedCategory || product.category_id === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
   const handleAdd = async (data: Omit<Product, 'id'>) => {
     try {
       await addProduct(data);
@@ -177,9 +177,7 @@ export function ProductsPage() {
     }
   };
 
-  
-
-    return (
+  return (
     <Layout>
       <div className="p-6">
         <div className="flex gap-6">
@@ -252,7 +250,10 @@ export function ProductsPage() {
                     type="text"
                     placeholder="Поиск товаров..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1); // Reset to first page on search
+                    }}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
@@ -286,14 +287,14 @@ export function ProductsPage() {
                           Загрузка...
                         </td>
                       </tr>
-                    ) : filteredProducts.length === 0 ? (
+                    ) : currentProducts.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-6 py-4 text-center text-gray-600">
                           Товары не найдены
                         </td>
                       </tr>
                     ) : (
-                      filteredProducts.map((product) => (
+                      currentProducts.map((product) => (
                         <tr key={product.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">
@@ -339,7 +340,7 @@ export function ProductsPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                              {buildCategoryPath(product.category_id).join(' → ')}
+                              {categories.find(c => c.id === product.category_id)?.name}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -371,10 +372,68 @@ export function ProductsPage() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-6 py-4 bg-white border-t">
+                  <div className="flex items-center">
+                    <p className="text-sm text-gray-700">
+                      Показано {startIndex + 1}-{Math.min(endIndex, filteredProducts.length)} из {filteredProducts.length}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    {[...Array(totalPages)].map((_, index) => {
+                      const pageNumber = index + 1;
+                      const isCurrentPage = pageNumber === currentPage;
+                      const isNearCurrent = Math.abs(pageNumber - currentPage) <= 1;
+                      const isEndPage = pageNumber === 1 || pageNumber === totalPages;
+
+                      if (isNearCurrent || isEndPage) {
+                        return (
+                          <button
+                            key={pageNumber}
+                            onClick={() => handlePageChange(pageNumber)}
+                            className={`min-w-[40px] h-10 rounded-lg border ${
+                              isCurrentPage
+                                ? 'bg-purple-600 text-white border-purple-600'
+                                : 'border-gray-300 hover:bg-gray-50'
+                            } transition-colors`}
+                          >
+                            {pageNumber}
+                          </button>
+                        );
+                      }
+                      if (isEndPage || Math.abs(pageNumber - currentPage) === 2) {
+                        return (
+                          <span key={`ellipsis-${pageNumber}`} className="px-2">
+                            ...
+                          </span>
+                        );
+                      }
+                      return null;
+                    })}
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
+
       {isFormOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
